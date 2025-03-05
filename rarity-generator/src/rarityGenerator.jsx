@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Camera, Upload } from 'lucide-react';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
@@ -8,26 +6,26 @@ import { saveAs } from 'file-saver';
 
 const RarityBackgroundGenerator = () => {
   const [itemsData, setItemsData] = useState([
-    { name: 'Item 1', rarity: 0.01, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 2', rarity: 0.01, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 3', rarity: 1.99, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 4', rarity: 1.99, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 5', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 6', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 7', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 8', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 9', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 10', rarity: 5, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 11', rarity: 10, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 12', rarity: 10, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 13', rarity: 10, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 14', rarity: 10, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 15', rarity: 10, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 16', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 17', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 18', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 19', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 20', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 1', background: 'legendary', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 2', background: 'legendary', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 3', background: 'rare', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 4', background: 'rare', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 5', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 6', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 7', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 8', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 9', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 10', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 11', background: 'common', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 12', background: 'common', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 13', background: 'common', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 14', background: 'common', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 15', background: 'common', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 16', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 17', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 18', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 19', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 20', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
   ]);
 
   const [bgRemovalSensitivity, setBgRemovalSensitivity] = useState(15);
@@ -45,16 +43,6 @@ const RarityBackgroundGenerator = () => {
   const [pulledBackground, setPulledBackground] = useState(null);
   const [globalDisableBackground, setGlobalDisableBackground] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Sort items by rarity (lowest to highest) but only when not actively editing
-  useEffect(() => {
-    if (!isEditing) {
-      const sortedItems = [...itemsData].sort((a, b) => a.rarity - b.rarity);
-      if (JSON.stringify(sortedItems) !== JSON.stringify(itemsData)) {
-        setItemsData(sortedItems);
-      }
-    }
-  }, [itemsData, isEditing]);
 
   const removeImageBackground = (imageData, sensitivity = 10) => {
     return new Promise((resolve) => {
@@ -181,7 +169,6 @@ const RarityBackgroundGenerator = () => {
       img.src = imageData;
     });
   };
-  
 
   const handleItemImageUpload = async (e, index) => {
     const file = e.target.files[0];
@@ -226,8 +213,7 @@ const RarityBackgroundGenerator = () => {
   const handleItemChange = (index, field, value) => {
     setIsEditing(true);
     const newItemsData = [...itemsData];
-    newItemsData[index][field] = field === 'rarity' ? parseFloat(value) || 0 : 
-                                field === 'imageScale' ? parseInt(value, 10) || 80 : value;
+    newItemsData[index][field] = field === 'imageScale' ? parseInt(value, 10) || 80 : value;
     setItemsData(newItemsData);
   };
   
@@ -237,23 +223,19 @@ const RarityBackgroundGenerator = () => {
   };
 
   const addItem = () => {
-    setIsEditing(false); // Ensure sorting happens after adding
-    setItemsData([...itemsData, { name: `Item ${itemsData.length + 1}`, rarity: 1, image: null, disableBackground: false, imageScale: 80 }]);
+    setItemsData([...itemsData, { 
+      name: `Item ${itemsData.length + 1}`, 
+      background: 'common', 
+      image: null, 
+      disableBackground: false, 
+      imageScale: 80 
+    }]);
   };
 
   const removeItem = (index) => {
-    setIsEditing(false); // Ensure sorting happens after removing
     const newItemsData = [...itemsData];
     newItemsData.splice(index, 1);
     setItemsData(newItemsData);
-  };
-
-  const getRarityTier = (rarity) => {
-    if (rarity <= backgrounds.legendary.maxRarity) return 'legendary';
-    if (rarity <= backgrounds.exceedinglyRare.maxRarity) return 'exceedinglyRare';
-    if (rarity <= backgrounds.rare.maxRarity) return 'rare';
-    if (rarity <= backgrounds.uncommon.maxRarity) return 'uncommon';
-    return 'common';
   };
 
   const toggleDisableBackground = (index) => {
@@ -263,35 +245,23 @@ const RarityBackgroundGenerator = () => {
   };
 
   const pullRandomItem = () => {
-    // Validate that percentages sum to 100
-    const sum = itemsData.reduce((acc, item) => acc + item.rarity, 0);
-    if (Math.abs(sum - 100) > 0.1) {
-      alert(`Rarity percentages should sum to 100%. Current sum: ${sum.toFixed(2)}%`);
+    const itemsWithImages = itemsData.filter(item => item.image !== null);
+    
+    if (itemsWithImages.length === 0) {
+      alert("Please upload at least one image for an item");
       return;
     }
-
-    // Random pull logic
-    const random = Math.random() * 100;
-    let cumulativeProb = 0;
     
-    for (const item of itemsData) {
-      cumulativeProb += item.rarity;
-      if (random <= cumulativeProb) {
-        const rarityTier = getRarityTier(item.rarity);
-        setSelectedItem(item);
-        setPulledBackground(backgrounds[rarityTier]);
-        return;
-      }
-    }
+    // Select random item
+    const randomIndex = Math.floor(Math.random() * itemsWithImages.length);
+    const selectedItem = itemsWithImages[randomIndex];
+    
+    setSelectedItem(selectedItem);
+    setPulledBackground(backgrounds[selectedItem.background]);
   };
   
   const validateAtLeastOneImage = () => {
     return itemsData.some(item => item.image !== null);
-  };
-
-  const validatePercentages = () => {
-    const sum = itemsData.reduce((acc, item) => acc + item.rarity, 0);
-    return Math.abs(sum - 100) <= 0.1;
   };
   
   const hasImagesToDownload = () => {
@@ -315,24 +285,32 @@ const RarityBackgroundGenerator = () => {
               field.toLowerCase().includes('item') || field.toLowerCase().includes('name')
             );
             
-            const rarityColumn = result.meta.fields.find(field => 
-              field.toLowerCase().includes('probability') || field.toLowerCase().includes('rarity')
+            // Look for background/tier/rarity column
+            const backgroundColumn = result.meta.fields.find(field => 
+              field.toLowerCase().includes('background') || 
+              field.toLowerCase().includes('tier') || 
+              field.toLowerCase().includes('rarity')
             );
             
-            if (nameColumn && rarityColumn) {
+            if (nameColumn) {
               // Extract and format the data
               const newItems = result.data.map(row => {
-                // Parse rarity and convert to percentage if needed
-                let rarity = parseFloat(row[rarityColumn]?.replace(/[^0-9.]/g, '')) || 0;
+                // Get background if available, otherwise default to common
+                let background = 'common';
                 
-                // If the rarity is a small decimal (e.g., 0.003), it's likely a proportion rather than percentage
-                if (rarity < 0.1) {
-                  rarity = rarity * 100;
+                if (backgroundColumn && row[backgroundColumn]) {
+                  const bgValue = row[backgroundColumn].toLowerCase().trim();
+                  // Try to match to available backgrounds
+                  if (bgValue.includes('legend')) background = 'legendary';
+                  else if (bgValue.includes('exceed') || bgValue.includes('rare') && bgValue.includes('exceed')) background = 'exceedinglyRare';
+                  else if (bgValue.includes('rare')) background = 'rare';
+                  else if (bgValue.includes('uncommon')) background = 'uncommon';
+                  else background = 'common';
                 }
                 
                 return {
                   name: row[nameColumn]?.trim() || "Unnamed Item",
-                  rarity,
+                  background,
                   image: null,
                   disableBackground: false,
                   imageScale: 80
@@ -343,7 +321,7 @@ const RarityBackgroundGenerator = () => {
               setItemsData(newItems);
               alert(`Successfully imported ${newItems.length} items from CSV!`);
             } else {
-              alert("Could not find required columns in the CSV. Please ensure it contains an 'Item' or 'Name' column and a 'Probability' or 'Rarity' column.");
+              alert("Could not find required 'Name' or 'Item' column in the CSV.");
             }
           },
           error: (error) => {
@@ -363,7 +341,7 @@ const RarityBackgroundGenerator = () => {
     
     // Set standard canvas dimensions - now without text area
     const canvasWidth = 800;
-    const canvasHeight = 800; // No extra space for text banner
+    const canvasHeight = 800;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     
@@ -372,8 +350,7 @@ const RarityBackgroundGenerator = () => {
     img.onload = () => {
       // Draw background if it's not disabled
       if (!globalDisableBackground && !item.disableBackground) {
-        const rarityTier = getRarityTier(item.rarity);
-        const background = backgrounds[rarityTier];
+        const background = backgrounds[item.background];
         
         // If there's a background image
         if (background.backgroundImage) {
@@ -605,19 +582,11 @@ const RarityBackgroundGenerator = () => {
           </div>
         </div>
         
-        <div className="mb-2 text-sm text-right">
-          Total: {itemsData.reduce((acc, item) => acc + item.rarity, 0).toFixed(2)}%
-          {!validatePercentages() && 
-            <span className="text-red-500 ml-2">(Should equal 100%)</span>
-          }
-        </div>
-        
         <div className="mb-4 max-h-64 overflow-y-auto border rounded p-2">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-100">
                 <th className="p-2 text-left">Name</th>
-                <th className="p-2 text-left">Rarity %</th>
                 <th className="p-2 text-left">Background</th>
                 <th className="p-2 text-left">Image</th>
                 <th className="p-2 text-left">Image Scale %</th>
@@ -638,31 +607,18 @@ const RarityBackgroundGenerator = () => {
                     />
                   </td>
                   <td className="p-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={item.rarity}
-                      onChange={(e) => handleItemChange(index, 'rarity', e.target.value)}
+                    <select 
+                      value={item.background}
+                      onChange={(e) => handleItemChange(index, 'background', e.target.value)}
                       onBlur={handleBlur}
                       className="w-full p-1 border rounded"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <div className="flex items-center">
-                      <div 
-                        className="w-6 h-6 rounded mr-1" 
-                        style={{ 
-                          backgroundColor: backgrounds[getRarityTier(item.rarity)].color,
-                          backgroundImage: backgrounds[getRarityTier(item.rarity)].backgroundImage ? 
-                            `url(${backgrounds[getRarityTier(item.rarity)].backgroundImage})` : 'none',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }}
-                      ></div>
-                      <span className="capitalize">{getRarityTier(item.rarity)}</span>
-                    </div>
+                    >
+                      <option value="legendary">Legendary</option>
+                      <option value="exceedinglyRare">Exceedingly Rare</option>
+                      <option value="rare">Rare</option>
+                      <option value="uncommon">Uncommon</option>
+                      <option value="common">Common</option>
+                    </select>
                   </td>
                   <td className="p-2">
                     <div className="flex items-center">
@@ -684,9 +640,9 @@ const RarityBackgroundGenerator = () => {
                       {item.image && (
                         <div className="w-12 h-12 rounded overflow-hidden relative flex items-center justify-center" 
                              style={{ 
-                               backgroundColor: (!globalDisableBackground && !item.disableBackground) ? backgrounds[getRarityTier(item.rarity)].color : 'transparent',
-                               backgroundImage: (!globalDisableBackground && !item.disableBackground && backgrounds[getRarityTier(item.rarity)].backgroundImage) ? 
-                                 `url(${backgrounds[getRarityTier(item.rarity)].backgroundImage})` : 'none',
+                               backgroundColor: (!globalDisableBackground && !item.disableBackground) ? backgrounds[item.background].color : 'transparent',
+                               backgroundImage: (!globalDisableBackground && !item.disableBackground && backgrounds[item.background].backgroundImage) ? 
+                                 `url(${backgrounds[item.background].backgroundImage})` : 'none',
                                backgroundSize: 'cover',
                                backgroundPosition: 'center'
                              }}>
@@ -742,9 +698,9 @@ const RarityBackgroundGenerator = () => {
       <div className="mb-6 flex space-x-4">
         <button 
           onClick={pullRandomItem} 
-          disabled={!validateAtLeastOneImage() || !validatePercentages()}
+          disabled={!validateAtLeastOneImage()}
           className={`px-4 py-2 rounded font-semibold ${
-            validateAtLeastOneImage() && validatePercentages() 
+            validateAtLeastOneImage() 
               ? 'bg-green-500 text-white hover:bg-green-600' 
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
