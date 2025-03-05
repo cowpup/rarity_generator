@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Camera, Upload } from 'lucide-react';
 import Papa from 'papaparse';
@@ -27,7 +29,10 @@ const RarityBackgroundGenerator = () => {
     { name: 'Item 19', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
     { name: 'Item 20', rarity: 4, image: null, disableBackground: false, imageScale: 80 },
   ]);
-  
+
+  const [bgRemovalSensitivity, setBgRemovalSensitivity] = useState(15);
+  const [bgRemovalEnabled, setBgRemovalEnabled] = useState(true);
+
   const [backgrounds, setBackgrounds] = useState({
     legendary: { color: '#FFD700', backgroundImage: null, maxRarity: 0.1 },       // Gold
     exceedinglyRare: { color: '#FF0000', backgroundImage: null, maxRarity: 1 },   // Red
@@ -51,18 +56,150 @@ const RarityBackgroundGenerator = () => {
     }
   }, [itemsData, isEditing]);
 
-  const handleItemImageUpload = (e, index) => {
+  const removeImageBackground = (imageData, sensitivity = 10) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Draw the image on the canvas
+        ctx.drawImage(img, 0, 0);
+        
+        // Get the image data
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        
+        // Extract the potential card boundaries using edge detection
+        let minX = canvas.width;
+        let maxX = 0;
+        let minY = canvas.height;
+        let maxY = 0;
+        
+        // Edge detection threshold - adjust this if needed
+        const edgeThreshold = 25;
+        
+        // Loop through pixels to find edges (rectangular card shape)
+        for (let y = 1; y < canvas.height - 1; y++) {
+          for (let x = 1; x < canvas.width - 1; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            const nextRowIdx = ((y+1) * canvas.width + x) * 4;
+            const nextColIdx = (y * canvas.width + (x+1)) * 4;
+            
+            // Calculate differences with neighboring pixels
+            const diffX = Math.abs(data[idx] - data[nextColIdx]) + 
+                        Math.abs(data[idx+1] - data[nextColIdx+1]) + 
+                        Math.abs(data[idx+2] - data[nextColIdx+2]);
+                        
+            const diffY = Math.abs(data[idx] - data[nextRowIdx]) + 
+                        Math.abs(data[idx+1] - data[nextRowIdx+1]) + 
+                        Math.abs(data[idx+2] - data[nextRowIdx+2]);
+            
+            // If we detect a strong edge, update boundary
+            if (diffX > edgeThreshold || diffY > edgeThreshold) {
+              minX = Math.min(minX, x);
+              maxX = Math.max(maxX, x);
+              minY = Math.min(minY, y);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+        
+        // Add padding to ensure we don't cut off any card edges
+        const padding = Math.max(10, Math.min(canvas.width, canvas.height) * 0.02); // 2% of smaller dimension
+        minX = Math.max(0, minX - padding);
+        minY = Math.max(0, minY - padding);
+        maxX = Math.min(canvas.width, maxX + padding);
+        maxY = Math.min(canvas.height, maxY + padding);
+        
+        // Check if we detected a reasonable card area
+        const detectedWidth = maxX - minX;
+        const detectedHeight = maxY - minY;
+        const isReasonableCard = 
+          detectedWidth > canvas.width * 0.2 && 
+          detectedHeight > canvas.height * 0.2 &&
+          detectedWidth < canvas.width * 0.95 &&
+          detectedHeight < canvas.height * 0.95;
+        
+        // If a proper card boundary was found, use it
+        if (isReasonableCard) {
+          // Make pixels outside the card boundary transparent
+          for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+              const idx = (y * canvas.width + x) * 4;
+              
+              // If pixel is outside detected card boundaries, make it transparent
+              if (x < minX || x > maxX || y < minY || y > maxY) {
+                data[idx + 3] = 0; // Set alpha to 0
+              }
+            }
+          }
+        } else {
+          // Fall back to standard background removal for non-card images
+          // Sample the corners to identify likely background color
+          const cornerSamples = [
+            {x: 0, y: 0}, // top left
+            {x: canvas.width - 1, y: 0}, // top right
+            {x: 0, y: canvas.height - 1}, // bottom left
+            {x: canvas.width - 1, y: canvas.height - 1} // bottom right
+          ];
+          
+          // Find most common corner color
+          const avgColor = {r: 0, g: 0, b: 0};
+          cornerSamples.forEach(corner => {
+            const idx = (corner.y * canvas.width + corner.x) * 4;
+            avgColor.r += data[idx] / 4;
+            avgColor.g += data[idx + 1] / 4;
+            avgColor.b += data[idx + 2] / 4;
+          });
+          
+          // Only process pixels similar to background color
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            const colorDist = Math.sqrt(
+              Math.pow(r - avgColor.r, 2) +
+              Math.pow(g - avgColor.g, 2) +
+              Math.pow(b - avgColor.b, 2)
+            );
+            
+            if (colorDist < sensitivity) {
+              data[i + 3] = 0; // Make pixel transparent
+            }
+          }
+        }
+        
+        // Apply changes and return the result
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      img.src = imageData;
+    });
+  };
+  
+
+  const handleItemImageUpload = async (e, index) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const imageResult = reader.result;
-        const rarityTier = getRarityTier(itemsData[index].rarity);
+        
+        // Process the image to remove background if enabled
+        let processedImage = imageResult;
+        if (bgRemovalEnabled) {
+          processedImage = await removeImageBackground(imageResult, bgRemovalSensitivity);
+        }
         
         // Create a new copy of the items array
         const newItemsData = [...itemsData];
-        // Store the image in the state
-        newItemsData[index].image = imageResult;
+        // Store the processed image in the state
+        newItemsData[index].image = processedImage;
         setItemsData(newItemsData);
       };
       reader.readAsDataURL(file);
@@ -314,9 +451,16 @@ const RarityBackgroundGenerator = () => {
     img.src = item.image;
     
     function finishDownload() {
-      canvas.toBlob((blob) => {
-        callback(blob);
-      }, 'image/png');
+      if (callback) {
+        canvas.toBlob((blob) => {
+          callback(blob);
+        }, 'image/png');
+      } else {
+        const link = document.createElement('a');
+        link.download = `${item.name.replace(/\s+/g, '_')}_${index}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
     }
   };
   
@@ -426,6 +570,37 @@ const RarityBackgroundGenerator = () => {
               >
                 <Upload size={16} className="mr-1" /> Import CSV
               </label>
+            </div>
+            <div className="px-3 py-1 bg-purple-500 text-white rounded flex items-center">
+              <div className="mr-2">
+                <input
+                  type="checkbox"
+                  id="bg-removal-toggle"
+                  checked={bgRemovalEnabled}
+                  onChange={() => setBgRemovalEnabled(!bgRemovalEnabled)}
+                  className="mr-1"
+                />
+                <label htmlFor="bg-removal-toggle" className="text-xs">
+                  Background Removal
+                </label>
+              </div>
+              {bgRemovalEnabled && (
+                <div className="flex items-center">
+                  <label htmlFor="sensitivity-slider" className="text-xs mr-1">
+                    Sensitivity:
+                  </label>
+                  <input
+                    type="range"
+                    id="sensitivity-slider"
+                    min="5"
+                    max="50"
+                    value={bgRemovalSensitivity}
+                    onChange={(e) => setBgRemovalSensitivity(parseInt(e.target.value))}
+                    className="w-20"
+                  />
+                  <span className="text-xs ml-1">{bgRemovalSensitivity}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
