@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Upload } from 'lucide-react';
 import Papa from 'papaparse';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 const RarityBackgroundGenerator = () => {
   const [itemsData, setItemsData] = useState([
@@ -217,7 +219,7 @@ const RarityBackgroundGenerator = () => {
     }
   };
   
-  const downloadSingleImage = (item, index) => {
+  const downloadSingleImage = (item, index, callback) => {
     // Create a canvas to combine the image with background and text
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -312,18 +314,31 @@ const RarityBackgroundGenerator = () => {
     img.src = item.image;
     
     function finishDownload() {
-      const link = document.createElement('a');
-      link.download = `${item.name.replace(/\s+/g, '_')}_${index}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      canvas.toBlob((blob) => {
+        callback(blob);
+      }, 'image/png');
     }
   };
   
-  const downloadAllImages = () => {
-    itemsData.forEach((item, index) => {
+  const downloadAllImages = async () => {
+    const zip = new JSZip();
+
+    const imagePromises = itemsData.map((item, index) => {
       if (item.image) {
-        downloadSingleImage(item, index);
+        return new Promise((resolve) => {
+          downloadSingleImage(item, index, (blob) => {
+            zip.file(`${item.name.replace(/\s+/g, '_')}_${index}.png`, blob);
+            resolve();
+          });
+        });
       }
+      return Promise.resolve();
+    });
+
+    await Promise.all(imagePromises);
+
+    zip.generateAsync({ type: 'blob' }).then((content) => {
+      saveAs(content, 'images.zip');
     });
   };
   
