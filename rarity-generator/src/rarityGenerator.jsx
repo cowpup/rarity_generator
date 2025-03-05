@@ -1,35 +1,37 @@
-import React, { useState } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Camera, Upload, Download, FileDown } from 'lucide-react';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 const RarityBackgroundGenerator = () => {
   const [itemsData, setItemsData] = useState([
-    { name: 'Item 1', background: 'legendary', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 2', background: 'legendary', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 3', background: 'rare', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 4', background: 'rare', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 5', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 6', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 7', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 8', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 9', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 10', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 11', background: 'common', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 12', background: 'common', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 13', background: 'common', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 14', background: 'common', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 15', background: 'common', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 16', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 17', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 18', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 19', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
-    { name: 'Item 20', background: 'uncommon', image: null, disableBackground: false, imageScale: 80 },
+    { name: 'Item 1', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 100 },
+    { name: 'Item 2', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 90 },
+    { name: 'Item 3', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 70 },
+    { name: 'Item 4', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 60 },
+    { name: 'Item 5', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 40 },
+    { name: 'Item 6', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 30 },
+    { name: 'Item 7', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 25 },
+    { name: 'Item 8', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 20 },
+    { name: 'Item 9', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 18 },
+    { name: 'Item 10', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 15 },
+    { name: 'Item 11', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 10 },
+    { name: 'Item 12', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 8 },
+    { name: 'Item 13', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 7 },
+    { name: 'Item 14', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 5 },
+    { name: 'Item 15', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 3 },
+    { name: 'Item 16', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 12 },
+    { name: 'Item 17', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 14 },
+    { name: 'Item 18', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 16 },
+    { name: 'Item 19', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 22 },
+    { name: 'Item 20', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 24 },
   ]);
 
   const [bgRemovalSensitivity, setBgRemovalSensitivity] = useState(15);
   const [bgRemovalEnabled, setBgRemovalEnabled] = useState(true);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const [backgrounds, setBackgrounds] = useState({
     legendary: { color: '#FFD700', backgroundImage: null, maxRarity: 0.1 },       // Gold
@@ -193,6 +195,61 @@ const RarityBackgroundGenerator = () => {
     }
   };
   
+  // Function to load image from URL
+  const loadImageFromUrl = async (url) => {
+    try {
+      // Create a new image element to load the image
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        
+        img.crossOrigin = "anonymous";  // Try to enable CORS
+        
+        img.onload = async () => {
+          // Create canvas to convert the image to data URL
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          try {
+            const imageData = canvas.toDataURL('image/png');
+            
+            // Process the image to remove background if enabled
+            let processedImage = imageData;
+            if (bgRemovalEnabled) {
+              try {
+                processedImage = await removeImageBackground(imageData, bgRemovalSensitivity);
+              } catch (error) {
+                console.error("Error removing background:", error);
+                // If background removal fails, use original image
+                processedImage = imageData;
+              }
+            }
+            
+            resolve(processedImage);
+          } catch (e) {
+            // If we get a security error due to CORS, try a fallback approach
+            console.warn("CORS issue detected, using alternative method", e);
+            reject(new Error("CORS error: Cannot access image data"));
+          }
+        };
+        
+        img.onerror = () => {
+          console.error("Failed to load image from URL:", url);
+          reject(new Error("Failed to load image"));
+        };
+        
+        // Start loading the image
+        img.src = url;
+      });
+    } catch (error) {
+      console.error("Error loading image:", error);
+      return null;
+    }
+  };
+
   const handleBackgroundImageUpload = (e, tier) => {
     const file = e.target.files[0];
     if (file) {
@@ -213,7 +270,43 @@ const RarityBackgroundGenerator = () => {
   const handleItemChange = (index, field, value) => {
     setIsEditing(true);
     const newItemsData = [...itemsData];
-    newItemsData[index][field] = field === 'imageScale' ? parseInt(value, 10) || 80 : value;
+    if (field === 'imageScale') {
+      newItemsData[index][field] = parseInt(value, 10) || 80;
+    } else if (field === 'price') {
+      const price = parseFloat(value) || 0;
+      newItemsData[index][field] = price;
+      // Recalculate backgrounds based on price changes
+      updateBackgroundsBasedOnPrice(newItemsData);
+    } else {
+      newItemsData[index][field] = value;
+    }
+    setItemsData(newItemsData);
+  };
+  
+  // Function to determine background tier based on price percentage
+  const determineTier = (pricePercentage) => {
+    if (pricePercentage >= 10) return 'legendary';
+    if (pricePercentage >= 5) return 'exceedinglyRare';
+    if (pricePercentage >= 3) return 'rare';
+    if (pricePercentage >= 1) return 'uncommon';
+    return 'common';
+  };
+  
+  // Function to update backgrounds based on price
+  const updateBackgroundsBasedOnPrice = (items = itemsData) => {
+    // Calculate total price
+    const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    
+    if (totalPrice <= 0) return; // Avoid division by zero
+    
+    const newItemsData = [...items];
+    
+    // Update background based on price percentage
+    newItemsData.forEach((item, index) => {
+      const pricePercentage = (parseFloat(item.price) || 0) / totalPrice * 100;
+      newItemsData[index].background = determineTier(pricePercentage);
+    });
+    
     setItemsData(newItemsData);
   };
   
@@ -223,19 +316,25 @@ const RarityBackgroundGenerator = () => {
   };
 
   const addItem = () => {
-    setItemsData([...itemsData, { 
+    const newItem = { 
       name: `Item ${itemsData.length + 1}`, 
       background: 'common', 
       image: null, 
       disableBackground: false, 
-      imageScale: 80 
-    }]);
+      imageScale: 80,
+      price: 0
+    };
+    
+    setItemsData([...itemsData, newItem]);
   };
 
   const removeItem = (index) => {
     const newItemsData = [...itemsData];
     newItemsData.splice(index, 1);
     setItemsData(newItemsData);
+    
+    // Update backgrounds after removing an item
+    updateBackgroundsBasedOnPrice(newItemsData);
   };
 
   const toggleDisableBackground = (index) => {
@@ -268,70 +367,180 @@ const RarityBackgroundGenerator = () => {
     return itemsData.some(item => item.image !== null);
   };
   
-  const handleCSVUpload = (e) => {
+  // This function is intentionally removed to fix the duplicate function error
+  
+  const handleCSVUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const csvText = e.target.result;
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (result) => {
-            console.log("CSV Parse Result:", result);
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const csvText = e.target.result;
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (result) => {
+          console.log("CSV Parse Result:", result);
+          
+          // Find the appropriate column headers (case insensitive)
+          const nameColumn = result.meta.fields.find(field => 
+            field.toLowerCase().includes('name') || field.toLowerCase() === 'item'
+          );
+          
+          const imageURLColumn = result.meta.fields.find(field => 
+            field.toLowerCase().includes('image') || 
+            field.toLowerCase().includes('url') || 
+            field.toLowerCase().includes('pic')
+          );
+          
+          const priceColumn = result.meta.fields.find(field =>
+            field.toLowerCase().includes('price') ||
+            field.toLowerCase().includes('value') ||
+            field.toLowerCase().includes('cost')
+          );
+          
+          const imageScaleColumn = result.meta.fields.find(field =>
+            field.toLowerCase().includes('scale') ||
+            field.toLowerCase().includes('size')
+          );
+          
+          const backgroundColumn = result.meta.fields.find(field =>
+            field.toLowerCase().includes('background') ||
+            field.toLowerCase().includes('rarity') ||
+            field.toLowerCase().includes('tier')
+          );
+          
+          const disableBackgroundColumn = result.meta.fields.find(field =>
+            field.toLowerCase().includes('disable')
+          );
+          
+          if (!nameColumn) {
+            alert("Could not find a 'Name' column in the CSV. Please use the template.");
+            return;
+          }
+          
+          // Extract and format the data
+          const newItems = result.data.map(row => {
+            // For price, handle potential currency symbols and formatting
+            let price = 0;
+            if (priceColumn) {
+              const priceStr = row[priceColumn]?.toString() || "0";
+              // Remove currency symbols, commas, and other non-numeric characters except for decimal points
+              const cleanPrice = priceStr.replace(/[^0-9.-]/g, '');
+              price = parseFloat(cleanPrice) || 0;
+            }
             
-            // Find the appropriate column headers (case insensitive)
-            const nameColumn = result.meta.fields.find(field => 
-              field.toLowerCase().includes('item') || field.toLowerCase().includes('name')
-            );
+            // For image scale, use the value from CSV or default to 80
+            let imageScale = 80;
+            if (imageScaleColumn && row[imageScaleColumn]) {
+              imageScale = parseInt(row[imageScaleColumn], 10) || 80;
+            }
             
-            // Look for background/tier/rarity column
-            const backgroundColumn = result.meta.fields.find(field => 
-              field.toLowerCase().includes('background') || 
-              field.toLowerCase().includes('tier') || 
-              field.toLowerCase().includes('rarity')
-            );
+            // For background, use the value from CSV or default to 'common'
+            let background = 'common';
+            if (backgroundColumn && row[backgroundColumn]) {
+              const bgValue = row[backgroundColumn].toLowerCase().trim();
+              if (bgValue.includes('legend')) background = 'legendary';
+              else if (bgValue.includes('exceed') || (bgValue.includes('rare') && bgValue.includes('exceed'))) background = 'exceedinglyRare';
+              else if (bgValue.includes('rare')) background = 'rare';
+              else if (bgValue.includes('uncommon')) background = 'uncommon';
+              else background = 'common';
+            }
             
-            if (nameColumn) {
-              // Extract and format the data
-              const newItems = result.data.map(row => {
-                // Get background if available, otherwise default to common
-                let background = 'common';
-                
-                if (backgroundColumn && row[backgroundColumn]) {
-                  const bgValue = row[backgroundColumn].toLowerCase().trim();
-                  // Try to match to available backgrounds
-                  if (bgValue.includes('legend')) background = 'legendary';
-                  else if (bgValue.includes('exceed') || bgValue.includes('rare') && bgValue.includes('exceed')) background = 'exceedinglyRare';
-                  else if (bgValue.includes('rare')) background = 'rare';
-                  else if (bgValue.includes('uncommon')) background = 'uncommon';
-                  else background = 'common';
+            // For disableBackground, check if it's 'yes', 'true', etc.
+            let disableBackground = false;
+            if (disableBackgroundColumn && row[disableBackgroundColumn]) {
+              const disableValue = row[disableBackgroundColumn].toLowerCase().trim();
+              disableBackground = disableValue === 'yes' || disableValue === 'true' || disableValue === '1';
+            }
+            
+            return {
+              name: row[nameColumn]?.trim() || "Unnamed Item",
+              background,
+              image: null, // Will be loaded from URL if available
+              disableBackground,
+              imageScale,
+              price,
+              imageURL: imageURLColumn ? row[imageURLColumn] : null
+            };
+          });
+          
+          // Update the state with the new items (without images first)
+          setItemsData(newItems);
+          
+          // Update backgrounds based on prices only if no background column was found
+          if (!backgroundColumn) {
+            updateBackgroundsBasedOnPrice(newItems);
+          }
+          
+          // If image URLs are provided, load them
+          if (imageURLColumn && newItems.some(item => item.imageURL)) {
+            setIsLoadingImages(true);
+            setLoadingProgress(0);
+            
+            const itemsWithImages = [...newItems];
+            let loadedCount = 0;
+            let successCount = 0;
+            
+            const imagePromises = itemsWithImages.map(async (item, index) => {
+              if (item.imageURL) {
+                try {
+                  console.log(`Loading image from URL: ${item.imageURL}`);
+                  const imageData = await loadImageFromUrl(item.imageURL);
+                  if (imageData) {
+                    itemsWithImages[index].image = imageData;
+                    successCount++;
+                  }
+                } catch (error) {
+                  console.error(`Error loading image for ${item.name}:`, error);
+                  // If first method fails, try alternative method
+                  try {
+                    const img = new Image();
+                    img.src = item.imageURL;
+                    await new Promise((resolve) => {
+                      img.onload = resolve;
+                      img.onerror = resolve; // Continue even if error
+                      // Set a timeout to resolve if image takes too long
+                      setTimeout(resolve, 5000);
+                    });
+                    
+                    if (img.complete && img.naturalWidth > 0) {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      const ctx = canvas.getContext('2d');
+                      ctx.drawImage(img, 0, 0);
+                      
+                      const imageData = canvas.toDataURL('image/png');
+                      itemsWithImages[index].image = imageData;
+                      successCount++;
+                    }
+                  } catch (fallbackError) {
+                    console.error(`Fallback method also failed for ${item.name}:`, fallbackError);
+                  }
                 }
                 
-                return {
-                  name: row[nameColumn]?.trim() || "Unnamed Item",
-                  background,
-                  image: null,
-                  disableBackground: false,
-                  imageScale: 80
-                };
-              });
-              
-              // Update the state with the new items
-              setItemsData(newItems);
-              alert(`Successfully imported ${newItems.length} items from CSV!`);
-            } else {
-              alert("Could not find required 'Name' or 'Item' column in the CSV.");
-            }
-          },
-          error: (error) => {
-            console.error("CSV Parse Error:", error);
-            alert("Error parsing CSV file. Please check the format and try again.");
+                loadedCount++;
+                setLoadingProgress(Math.floor((loadedCount / itemsWithImages.filter(i => i.imageURL).length) * 100));
+              }
+            });
+            
+            await Promise.all(imagePromises);
+            
+            setItemsData(itemsWithImages);
+            setIsLoadingImages(false);
+            alert(`Successfully imported ${newItems.length} items from CSV! Loaded ${successCount} images.`);
+          } else {
+            alert(`Successfully imported ${newItems.length} items from CSV!`);
           }
-        });
-      };
-      reader.readAsText(file);
-    }
+        },
+        error: (error) => {
+          console.error("CSV Parse Error:", error);
+          alert("Error parsing CSV file. Please check the format and try again.");
+        }
+      });
+    };
+    reader.readAsText(file);
   };
   
   const downloadSingleImage = (item, index, callback) => {
@@ -469,6 +678,60 @@ const RarityBackgroundGenerator = () => {
     }
   };
 
+  // Export current items as CSV
+  const exportItemsAsCSV = () => {
+    const csvData = itemsData.map(item => ({
+      Name: item.name,
+      ImageURL: item.imageURL || '',
+      Price: item.price,
+      Background: item.background,
+      DisableBackground: item.disableBackground ? 'Yes' : 'No',
+      ImageScale: item.imageScale
+    }));
+    
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, 'pull_box_items.csv');
+  };
+  
+  // Function to download a CSV template
+  const downloadCSVTemplate = () => {
+    // Create template data
+    const templateData = [
+      {
+        Name: "1986/87 Fleer Michael Jordan Rookie",
+        ImageURL: "https://example.com/jordan.jpg",
+        Price: 500000,
+        Background: "legendary",
+        DisableBackground: "No",
+        ImageScale: 55
+      },
+      {
+        Name: "1953 Topps Baseball #244 Willie Mays",
+        ImageURL: "https://example.com/mays.jpg",
+        Price: 175000,
+        Background: "legendary",
+        DisableBackground: "No",
+        ImageScale: 55
+      },
+      {
+        Name: "2018 Topps Aaron Judge Rookie Auto /25",
+        ImageURL: "https://example.com/judge.jpg",
+        Price: 35000,
+        Background: "rare",
+        DisableBackground: "No",
+        ImageScale: 55
+      }
+    ];
+    
+    // Convert to CSV
+    const csv = Papa.unparse(templateData);
+    
+    // Create and trigger download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, 'template.csv');
+  };
+
   return (
     <div className="flex flex-col p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Pull Box Rarity Background Generator</h1>
@@ -533,21 +796,39 @@ const RarityBackgroundGenerator = () => {
             >
               Add Item
             </button>
-            <div className="relative">
-              <input
-                type="file"
-                accept=".csv"
-                id="csv-upload"
-                onChange={handleCSVUpload}
-                className="hidden"
-              />
-              <label
-                htmlFor="csv-upload"
-                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer flex items-center"
+            
+            <div className="flex space-x-2">
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="csv-upload"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="csv-upload"
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer flex items-center"
+                >
+                  <Upload size={16} className="mr-1" /> Import CSV
+                </label>
+              </div>
+              
+              <button
+                onClick={downloadCSVTemplate}
+                className="px-3 py-1 bg-teal-500 text-white rounded hover:bg-teal-600 flex items-center"
               >
-                <Upload size={16} className="mr-1" /> Import CSV
-              </label>
+                <FileDown size={16} className="mr-1" /> Template
+              </button>
+              
+              <button
+                onClick={exportItemsAsCSV}
+                className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center"
+              >
+                <Download size={16} className="mr-1" /> Export CSV
+              </button>
             </div>
+            
             <div className="px-3 py-1 bg-purple-500 text-white rounded flex items-center">
               <div className="mr-2">
                 <input
@@ -582,14 +863,30 @@ const RarityBackgroundGenerator = () => {
           </div>
         </div>
         
+        {isLoadingImages && (
+          <div className="mb-4 bg-blue-100 p-3 rounded">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium">Loading images from URLs...</span>
+              <span className="text-sm">{loadingProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+        
         <div className="mb-4 max-h-64 overflow-y-auto border rounded p-2">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-100">
                 <th className="p-2 text-left">Name</th>
                 <th className="p-2 text-left">Background</th>
+                <th className="p-2 text-left">Price</th>
                 <th className="p-2 text-left">Image</th>
-                <th className="p-2 text-left">Image Scale %</th>
+                <th className="p-2 text-left">Scale %</th>
                 <th className="p-2 text-left">Background</th>
                 <th className="p-2 text-left">Actions</th>
               </tr>
@@ -619,6 +916,17 @@ const RarityBackgroundGenerator = () => {
                       <option value="uncommon">Uncommon</option>
                       <option value="common">Common</option>
                     </select>
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.price}
+                      onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                      onBlur={handleBlur}
+                      className="w-full p-1 border rounded"
+                    />
                   </td>
                   <td className="p-2">
                     <div className="flex items-center">
@@ -764,6 +1072,23 @@ const RarityBackgroundGenerator = () => {
           </div>
         </div>
       )}
+      
+      <div className="bg-blue-50 p-4 rounded mb-6">
+        <h3 className="text-lg font-semibold mb-2">CSV Import Instructions</h3>
+        <p className="mb-2">The CSV should contain the following columns:</p>
+        <ul className="list-disc pl-5 mb-3">
+          <li><strong>Name:</strong> The name of your item</li>
+          <li><strong>ImageURL:</strong> A URL to the image (optional)</li>
+          <li><strong>Price:</strong> The price/value of the item</li>
+        </ul>
+        <p className="mb-2">When importing CSV data:</p>
+        <ul className="list-disc pl-5">
+          <li>Background tier is automatically determined based on price percentage</li>
+          <li>Items with higher price values will get rarer backgrounds</li>
+          <li>You can download a template CSV to see the correct format</li>
+          <li>For best results with image URLs, use direct image links</li>
+        </ul>
+      </div>
     </div>
   );
 };
