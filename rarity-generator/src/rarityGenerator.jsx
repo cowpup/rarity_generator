@@ -194,58 +194,235 @@ const RarityBackgroundGenerator = () => {
       reader.readAsDataURL(file);
     }
   };
-  
-  // Function to load image from URL
-  const loadImageFromUrl = async (url) => {
+
+  // Function to load image from URL - simplified and reliable version
+  const loadImageFromUrl = async (url, timeout = 20000) => {
+    if (!url) return null;
+    
+    // Sanitize and validate URL
+    let sanitizedUrl = url.trim();
+    
+    // Add protocol if missing
+    if (!sanitizedUrl.toLowerCase().startsWith('http://') && !sanitizedUrl.toLowerCase().startsWith('https://')) {
+      sanitizedUrl = 'https://' + sanitizedUrl;
+    }
+    
+    // Replace spaces with %20
+    sanitizedUrl = sanitizedUrl.replace(/ /g, '%20');
+    
+    console.log(`Loading image: ${sanitizedUrl}`);
+    
+    // Method 1: Direct image loading
     try {
-      // Create a new image element to load the image
-      return new Promise((resolve, reject) => {
-        const img = new Image();
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      const imageData = await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          img.src = "";
+          reject(new Error("Timeout"));
+        }, timeout);
         
-        img.crossOrigin = "anonymous";  // Try to enable CORS
-        
-        img.onload = async () => {
-          // Create canvas to convert the image to data URL
+        img.onload = () => {
+          clearTimeout(timeoutId);
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
-          
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
           
           try {
-            const imageData = canvas.toDataURL('image/png');
-            
-            // Process the image to remove background if enabled
-            let processedImage = imageData;
-            if (bgRemovalEnabled) {
-              try {
-                processedImage = await removeImageBackground(imageData, bgRemovalSensitivity);
-              } catch (error) {
-                console.error("Error removing background:", error);
-                // If background removal fails, use original image
-                processedImage = imageData;
-              }
-            }
-            
-            resolve(processedImage);
+            const dataUrl = canvas.toDataURL('image/png');
+            resolve(dataUrl);
           } catch (e) {
-            // If we get a security error due to CORS, try a fallback approach
-            console.warn("CORS issue detected, using alternative method", e);
-            reject(new Error("CORS error: Cannot access image data"));
+            reject(new Error("Canvas error"));
           }
         };
         
         img.onerror = () => {
-          console.error("Failed to load image from URL:", url);
-          reject(new Error("Failed to load image"));
+          clearTimeout(timeoutId);
+          reject(new Error("Load error"));
         };
         
-        // Start loading the image
-        img.src = url;
+        img.src = sanitizedUrl;
       });
+      
+      // Apply background removal if enabled
+      if (bgRemovalEnabled && imageData) {
+        try {
+          return await removeImageBackground(imageData, bgRemovalSensitivity);
+        } catch (e) {
+          console.warn("Background removal failed:", e);
+          return imageData;
+        }
+      }
+      
+      return imageData;
     } catch (error) {
-      console.error("Error loading image:", error);
+      console.warn(`Direct load failed: ${error.message}`);
+      
+      // Method 2: Google proxy for Cloud Storage URLs
+      if (sanitizedUrl.includes('storage.googleapis.com')) {
+        try {
+          console.log("Trying Google Storage proxy");
+          const proxyUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(sanitizedUrl)}`;
+          
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          
+          const imageData = await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+              img.src = "";
+              reject(new Error("Google proxy timeout"));
+            }, timeout);
+            
+            img.onload = () => {
+              clearTimeout(timeoutId);
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              
+              try {
+                const dataUrl = canvas.toDataURL('image/png');
+                resolve(dataUrl);
+              } catch (e) {
+                reject(new Error("Canvas error with Google proxy"));
+              }
+            };
+            
+            img.onerror = () => {
+              clearTimeout(timeoutId);
+              reject(new Error("Google proxy load error"));
+            };
+            
+            img.src = proxyUrl;
+          });
+          
+          // Apply background removal if enabled
+          if (bgRemovalEnabled && imageData) {
+            try {
+              return await removeImageBackground(imageData, bgRemovalSensitivity);
+            } catch (e) {
+              console.warn("Background removal failed with Google proxy:", e);
+              return imageData;
+            }
+          }
+          
+          return imageData;
+        } catch (googleProxyError) {
+          console.warn(`Google proxy failed: ${googleProxyError.message}`);
+        }
+      }
+      
+      // Method 3: AllOrigins proxy as last resort
+      try {
+        console.log("Trying AllOrigins proxy");
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(sanitizedUrl)}`;
+        
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        
+        const imageData = await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            img.src = "";
+            reject(new Error("AllOrigins proxy timeout"));
+          }, timeout);
+          
+          img.onload = () => {
+            clearTimeout(timeoutId);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            try {
+              const dataUrl = canvas.toDataURL('image/png');
+              resolve(dataUrl);
+            } catch (e) {
+              reject(new Error("Canvas error with AllOrigins proxy"));
+            }
+          };
+          
+          img.onerror = () => {
+            clearTimeout(timeoutId);
+            reject(new Error("AllOrigins proxy load error"));
+          };
+          
+          img.src = proxyUrl;
+        });
+        
+        // Apply background removal if enabled
+        if (bgRemovalEnabled && imageData) {
+          try {
+            return await removeImageBackground(imageData, bgRemovalSensitivity);
+          } catch (e) {
+            console.warn("Background removal failed with AllOrigins proxy:", e);
+            return imageData;
+          }
+        }
+        
+        return imageData;
+      } catch (proxyError) {
+        console.warn(`AllOrigins proxy failed: ${proxyError.message}`);
+        return null;
+      }
+    }
+  };
+
+  // Backup method for retry attempts
+  const loadImageFromUrlBackupMethod = async (url) => {
+    console.log(`Using backup method for: ${url}`);
+    
+    try {
+      // Try the CORS Bridge method
+      const proxyUrl = `https://cors.bridged.cc/${url}`;
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      const imageData = await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          img.src = "";
+          reject(new Error("Backup timeout"));
+        }, 15000);
+        
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            resolve(dataUrl);
+          } catch (e) {
+            reject(new Error("Canvas error in backup"));
+          }
+        };
+        
+        img.onerror = () => {
+          clearTimeout(timeoutId);
+          reject(new Error("Backup load error"));
+        };
+        
+        img.src = proxyUrl;
+      });
+      
+      if (bgRemovalEnabled && imageData) {
+        try {
+          return await removeImageBackground(imageData, bgRemovalSensitivity);
+        } catch (e) {
+          return imageData;
+        }
+      }
+      
+      return imageData;
+    } catch (error) {
+      console.warn(`Backup method failed: ${error.message}`);
       return null;
     }
   };
@@ -367,8 +544,44 @@ const RarityBackgroundGenerator = () => {
     return itemsData.some(item => item.image !== null);
   };
   
-  // This function is intentionally removed to fix the duplicate function error
-  
+  // Function to download a CSV template
+  const downloadCSVTemplate = () => {
+    // Create template data
+    const templateData = [
+      {
+        Name: "1986/87 Fleer Michael Jordan Rookie",
+        ImageURL: "https://example.com/jordan.jpg",
+        Price: 500000,
+        Background: "legendary",
+        DisableBackground: "No",
+        ImageScale: 55
+      },
+      {
+        Name: "1953 Topps Baseball #244 Willie Mays",
+        ImageURL: "https://example.com/mays.jpg",
+        Price: 175000,
+        Background: "legendary",
+        DisableBackground: "No",
+        ImageScale: 55
+      },
+      {
+        Name: "2018 Topps Aaron Judge Rookie Auto /25",
+        ImageURL: "https://example.com/judge.jpg",
+        Price: 35000,
+        Background: "rare",
+        DisableBackground: "No",
+        ImageScale: 55
+      }
+    ];
+    
+    // Convert to CSV
+    const csv = Papa.unparse(templateData);
+    
+    // Create and trigger download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, 'template.csv');
+  };
+
   const handleCSVUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -454,6 +667,20 @@ const RarityBackgroundGenerator = () => {
               disableBackground = disableValue === 'yes' || disableValue === 'true' || disableValue === '1';
             }
             
+            // Process URL - clean up and normalize
+            let imageURL = null;
+            if (imageURLColumn && row[imageURLColumn]) {
+              imageURL = row[imageURLColumn].trim();
+              
+              // Ensure URL has proper protocol
+              if (imageURL && !imageURL.toLowerCase().startsWith('http://') && !imageURL.toLowerCase().startsWith('https://')) {
+                imageURL = 'https://' + imageURL;
+              }
+              
+              // Replace spaces with %20
+              imageURL = imageURL.replace(/ /g, '%20');
+            }
+            
             return {
               name: row[nameColumn]?.trim() || "Unnamed Item",
               background,
@@ -461,77 +688,154 @@ const RarityBackgroundGenerator = () => {
               disableBackground,
               imageScale,
               price,
-              imageURL: imageURLColumn ? row[imageURLColumn] : null
+              imageURL,
+              loadStatus: imageURL ? 'pending' : 'none' // Track loading status
             };
           });
+          
+          // Update backgrounds based on prices only if no background column was found
+          if (!backgroundColumn) {
+            // Calculate total price
+            const totalPrice = newItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+            
+            if (totalPrice > 0) {
+              // Update background based on price percentage
+              newItems.forEach((item, index) => {
+                const pricePercentage = (parseFloat(item.price) || 0) / totalPrice * 100;
+                newItems[index].background = determineTier(pricePercentage);
+              });
+            }
+          }
           
           // Update the state with the new items (without images first)
           setItemsData(newItems);
           
-          // Update backgrounds based on prices only if no background column was found
-          if (!backgroundColumn) {
-            updateBackgroundsBasedOnPrice(newItems);
-          }
+          // If image URLs are provided, load them in small batches with delays
+          const itemsWithValidURLs = newItems
+            .map((item, index) => ({ item, index }))
+            .filter(({ item }) => 
+              item.imageURL && 
+              typeof item.imageURL === 'string' && 
+              item.imageURL.trim() !== ''
+            );
           
-          // If image URLs are provided, load them
-          if (imageURLColumn && newItems.some(item => item.imageURL)) {
+          if (itemsWithValidURLs.length > 0) {
             setIsLoadingImages(true);
             setLoadingProgress(0);
             
             const itemsWithImages = [...newItems];
             let loadedCount = 0;
             let successCount = 0;
+            let failedCount = 0;
+            let retryableItems = [];
             
-            const imagePromises = itemsWithImages.map(async (item, index) => {
-              if (item.imageURL) {
+            console.log(`Found ${itemsWithValidURLs.length} image URLs to process`);
+            
+            // Smaller batch size for better reliability
+            const batchSize = 3;
+            const totalBatches = Math.ceil(itemsWithValidURLs.length / batchSize);
+            
+            for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+              const startIdx = batchIndex * batchSize;
+              const endIdx = Math.min(startIdx + batchSize, itemsWithValidURLs.length);
+              const currentBatch = itemsWithValidURLs.slice(startIdx, endIdx);
+              
+              console.log(`Processing batch ${batchIndex + 1}/${totalBatches} (${currentBatch.length} images)`);
+              
+              // Process images in the batch one by one with a delay between each
+              for (const { item, index } of currentBatch) {
                 try {
-                  console.log(`Loading image from URL: ${item.imageURL}`);
-                  const imageData = await loadImageFromUrl(item.imageURL);
+                  console.log(`Loading image ${loadedCount + 1}/${itemsWithValidURLs.length}: ${item.imageURL}`);
+                  
+                  // Set status to loading
+                  itemsWithImages[index].loadStatus = 'loading';
+                  setItemsData([...itemsWithImages]);
+                  
+                  // Try to load the image with extended timeout
+                  const imageData = await loadImageFromUrl(item.imageURL, 30000); // 30 second timeout
+                  
                   if (imageData) {
                     itemsWithImages[index].image = imageData;
+                    itemsWithImages[index].loadStatus = 'success';
                     successCount++;
+                    console.log(`Successfully loaded image: ${item.name}`);
+                  } else {
+                    itemsWithImages[index].loadStatus = 'failed';
+                    failedCount++;
+                    retryableItems.push({ item, index });
+                    console.log(`Failed to load image: ${item.name}`);
                   }
                 } catch (error) {
                   console.error(`Error loading image for ${item.name}:`, error);
-                  // If first method fails, try alternative method
-                  try {
-                    const img = new Image();
-                    img.src = item.imageURL;
-                    await new Promise((resolve) => {
-                      img.onload = resolve;
-                      img.onerror = resolve; // Continue even if error
-                      // Set a timeout to resolve if image takes too long
-                      setTimeout(resolve, 5000);
-                    });
-                    
-                    if (img.complete && img.naturalWidth > 0) {
-                      const canvas = document.createElement('canvas');
-                      canvas.width = img.width;
-                      canvas.height = img.height;
-                      const ctx = canvas.getContext('2d');
-                      ctx.drawImage(img, 0, 0);
-                      
-                      const imageData = canvas.toDataURL('image/png');
-                      itemsWithImages[index].image = imageData;
-                      successCount++;
-                    }
-                  } catch (fallbackError) {
-                    console.error(`Fallback method also failed for ${item.name}:`, fallbackError);
-                  }
+                  itemsWithImages[index].loadStatus = 'failed';
+                  failedCount++;
+                  retryableItems.push({ item, index });
                 }
                 
                 loadedCount++;
-                setLoadingProgress(Math.floor((loadedCount / itemsWithImages.filter(i => i.imageURL).length) * 100));
+                setLoadingProgress(Math.floor((loadedCount / itemsWithValidURLs.length) * 100));
+                
+                // Update the state with loaded image
+                setItemsData([...itemsWithImages]);
+                
+                // Add a delay between individual image loads (500ms)
+                if (loadedCount < itemsWithValidURLs.length) {
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
               }
-            });
+              
+              // Add a larger delay between batches (1 second)
+              if (batchIndex < totalBatches - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
             
-            await Promise.all(imagePromises);
+            // Try one more time for all failed items using alternative methods
+            if (retryableItems.length > 0) {
+              console.log(`Retrying ${retryableItems.length} failed images with alternative methods...`);
+              
+              for (let i = 0; i < retryableItems.length; i++) {
+                const { item, index } = retryableItems[i];
+                
+                try {
+                  console.log(`Retry attempt for ${item.name}: ${item.imageURL}`);
+                  itemsWithImages[index].loadStatus = 'retrying';
+                  setItemsData([...itemsWithImages]);
+                  
+                  // Try loading with a different method specifically for retries
+                  const imageData = await loadImageFromUrlBackupMethod(item.imageURL);
+                  
+                  if (imageData) {
+                    itemsWithImages[index].image = imageData;
+                    itemsWithImages[index].loadStatus = 'success';
+                    successCount++;
+                    failedCount--;
+                    console.log(`Retry successful for: ${item.name}`);
+                  } else {
+                    itemsWithImages[index].loadStatus = 'failed';
+                    console.log(`Retry failed for: ${item.name}`);
+                  }
+                } catch (error) {
+                  console.error(`Retry error for ${item.name}:`, error);
+                  itemsWithImages[index].loadStatus = 'failed';
+                }
+                
+                setItemsData([...itemsWithImages]);
+                
+                // Add a delay between retries
+                if (i < retryableItems.length - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 700));
+                }
+              }
+            }
             
+            // Final update
             setItemsData(itemsWithImages);
             setIsLoadingImages(false);
-            alert(`Successfully imported ${newItems.length} items from CSV! Loaded ${successCount} images.`);
+            
+            alert(`Import complete! Successfully loaded ${successCount} out of ${itemsWithValidURLs.length} images. ${failedCount} images failed to load.`);
           } else {
-            alert(`Successfully imported ${newItems.length} items from CSV!`);
+            alert(`Successfully imported ${newItems.length} items from CSV! No image URLs found to load.`);
           }
         },
         error: (error) => {
@@ -542,7 +846,7 @@ const RarityBackgroundGenerator = () => {
     };
     reader.readAsText(file);
   };
-  
+
   const downloadSingleImage = (item, index, callback) => {
     // Create a canvas to combine the image with background and text
     const canvas = document.createElement('canvas');
@@ -649,7 +953,7 @@ const RarityBackgroundGenerator = () => {
       }
     }
   };
-  
+
   const downloadAllImages = async () => {
     const zip = new JSZip();
 
@@ -671,7 +975,7 @@ const RarityBackgroundGenerator = () => {
       saveAs(content, 'images.zip');
     });
   };
-  
+
   const downloadResult = () => {
     if (selectedItem && pulledBackground) {
       downloadSingleImage(selectedItem, 'result');
@@ -692,44 +996,6 @@ const RarityBackgroundGenerator = () => {
     const csv = Papa.unparse(csvData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, 'pull_box_items.csv');
-  };
-  
-  // Function to download a CSV template
-  const downloadCSVTemplate = () => {
-    // Create template data
-    const templateData = [
-      {
-        Name: "1986/87 Fleer Michael Jordan Rookie",
-        ImageURL: "https://example.com/jordan.jpg",
-        Price: 500000,
-        Background: "legendary",
-        DisableBackground: "No",
-        ImageScale: 55
-      },
-      {
-        Name: "1953 Topps Baseball #244 Willie Mays",
-        ImageURL: "https://example.com/mays.jpg",
-        Price: 175000,
-        Background: "legendary",
-        DisableBackground: "No",
-        ImageScale: 55
-      },
-      {
-        Name: "2018 Topps Aaron Judge Rookie Auto /25",
-        ImageURL: "https://example.com/judge.jpg",
-        Price: 35000,
-        Background: "rare",
-        DisableBackground: "No",
-        ImageScale: 55
-      }
-    ];
-    
-    // Convert to CSV
-    const csv = Papa.unparse(templateData);
-    
-    // Create and trigger download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, 'template.csv');
   };
 
   return (
