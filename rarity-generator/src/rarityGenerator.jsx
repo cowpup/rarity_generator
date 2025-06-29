@@ -6,32 +6,34 @@ import { saveAs } from 'file-saver';
 
 const RarityBackgroundGenerator = () => {
   const [itemsData, setItemsData] = useState([
-    { name: 'Item 1', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 100 },
-    { name: 'Item 2', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 90 },
-    { name: 'Item 3', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 70 },
-    { name: 'Item 4', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 60 },
-    { name: 'Item 5', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 40 },
-    { name: 'Item 6', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 30 },
-    { name: 'Item 7', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 25 },
-    { name: 'Item 8', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 20 },
-    { name: 'Item 9', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 18 },
-    { name: 'Item 10', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 15 },
-    { name: 'Item 11', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 10 },
-    { name: 'Item 12', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 8 },
-    { name: 'Item 13', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 7 },
-    { name: 'Item 14', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 5 },
-    { name: 'Item 15', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 3 },
-    { name: 'Item 16', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 12 },
-    { name: 'Item 17', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 14 },
-    { name: 'Item 18', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 16 },
-    { name: 'Item 19', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 22 },
-    { name: 'Item 20', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 24 },
+    { name: 'Item 1', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 100, verticalOffset: 0 },
+    { name: 'Item 2', background: 'legendary', image: null, disableBackground: false, imageScale: 80, price: 90, verticalOffset: 0 },
+    { name: 'Item 3', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 70, verticalOffset: 0 },
+    { name: 'Item 4', background: 'rare', image: null, disableBackground: false, imageScale: 80, price: 60, verticalOffset: 0 },
+    { name: 'Item 5', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 40, verticalOffset: 0 },
+    { name: 'Item 6', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 30, verticalOffset: 0 },
+    { name: 'Item 7', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 25, verticalOffset: 0 },
+    { name: 'Item 8', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 20, verticalOffset: 0 },
+    { name: 'Item 9', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 18, verticalOffset: 0 },
+    { name: 'Item 10', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 15, verticalOffset: 0 },
+    { name: 'Item 11', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 10, verticalOffset: 0 },
+    { name: 'Item 12', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 8, verticalOffset: 0 },
+    { name: 'Item 13', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 7, verticalOffset: 0 },
+    { name: 'Item 14', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 5, verticalOffset: 0 },
+    { name: 'Item 15', background: 'common', image: null, disableBackground: false, imageScale: 80, price: 3, verticalOffset: 0 },
+    { name: 'Item 16', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 12, verticalOffset: 0 },
+    { name: 'Item 17', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 14, verticalOffset: 0 },
+    { name: 'Item 18', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 16, verticalOffset: 0 },
+    { name: 'Item 19', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 22, verticalOffset: 0 },
+    { name: 'Item 20', background: 'uncommon', image: null, disableBackground: false, imageScale: 80, price: 24, verticalOffset: 0 },
   ]);
 
   const [bgRemovalSensitivity, setBgRemovalSensitivity] = useState(15);
   const [bgRemovalEnabled, setBgRemovalEnabled] = useState(true);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [globalVerticalOffset, setGlobalVerticalOffset] = useState(0);
+  const [useGlobalVerticalOffset, setUseGlobalVerticalOffset] = useState(false);
 
   const [backgrounds, setBackgrounds] = useState({
     legendary: { color: '#FFD700', backgroundImage: null, maxRarity: 0.1 },       // Gold
@@ -449,6 +451,8 @@ const RarityBackgroundGenerator = () => {
     const newItemsData = [...itemsData];
     if (field === 'imageScale') {
       newItemsData[index][field] = parseInt(value, 10) || 80;
+    } else if (field === 'verticalOffset') {
+      newItemsData[index][field] = parseInt(value, 10) || 0;
     } else if (field === 'price') {
       const price = parseFloat(value) || 0;
       newItemsData[index][field] = price;
@@ -499,7 +503,8 @@ const RarityBackgroundGenerator = () => {
       image: null, 
       disableBackground: false, 
       imageScale: 80,
-      price: 0
+      price: 0,
+      verticalOffset: 0
     };
     
     setItemsData([...itemsData, newItem]);
@@ -543,6 +548,15 @@ const RarityBackgroundGenerator = () => {
   const hasImagesToDownload = () => {
     return itemsData.some(item => item.image !== null);
   };
+
+  // Apply global vertical offset to all items
+  const applyGlobalVerticalOffset = () => {
+    const newItemsData = [...itemsData];
+    newItemsData.forEach((item, index) => {
+      newItemsData[index].verticalOffset = globalVerticalOffset;
+    });
+    setItemsData(newItemsData);
+  };
   
   // Function to download a CSV template
   const downloadCSVTemplate = () => {
@@ -554,7 +568,8 @@ const RarityBackgroundGenerator = () => {
         Price: 500000,
         Background: "legendary",
         DisableBackground: "No",
-        ImageScale: 55
+        ImageScale: 55,
+        VerticalOffset: 0
       },
       {
         Name: "1953 Topps Baseball #244 Willie Mays",
@@ -562,7 +577,8 @@ const RarityBackgroundGenerator = () => {
         Price: 175000,
         Background: "legendary",
         DisableBackground: "No",
-        ImageScale: 55
+        ImageScale: 55,
+        VerticalOffset: -20
       },
       {
         Name: "2018 Topps Aaron Judge Rookie Auto /25",
@@ -570,7 +586,8 @@ const RarityBackgroundGenerator = () => {
         Price: 35000,
         Background: "rare",
         DisableBackground: "No",
-        ImageScale: 55
+        ImageScale: 55,
+        VerticalOffset: 10
       }
     ];
     
@@ -617,6 +634,12 @@ const RarityBackgroundGenerator = () => {
             field.toLowerCase().includes('size')
           );
           
+          const verticalOffsetColumn = result.meta.fields.find(field =>
+            field.toLowerCase().includes('vertical') ||
+            field.toLowerCase().includes('offset') ||
+            field.toLowerCase().includes('position')
+          );
+          
           const backgroundColumn = result.meta.fields.find(field =>
             field.toLowerCase().includes('background') ||
             field.toLowerCase().includes('rarity') ||
@@ -647,6 +670,12 @@ const RarityBackgroundGenerator = () => {
             let imageScale = 80;
             if (imageScaleColumn && row[imageScaleColumn]) {
               imageScale = parseInt(row[imageScaleColumn], 10) || 80;
+            }
+            
+            // For vertical offset, use the value from CSV or default to 0
+            let verticalOffset = 0;
+            if (verticalOffsetColumn && row[verticalOffsetColumn]) {
+              verticalOffset = parseInt(row[verticalOffsetColumn], 10) || 0;
             }
             
             // For background, use the value from CSV or default to 'common'
@@ -687,6 +716,7 @@ const RarityBackgroundGenerator = () => {
               image: null, // Will be loaded from URL if available
               disableBackground,
               imageScale,
+              verticalOffset,
               price,
               imageURL,
               loadStatus: imageURL ? 'pending' : 'none' // Track loading status
@@ -871,55 +901,24 @@ const RarityBackgroundGenerator = () => {
           bgImg.onload = () => {
             // Fill the canvas with the background image
             ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
-            
-            // Calculate dimensions to center the item image on the background
-            // Use the item's imageScale property for scaling
-            const scale = Math.min(
-              (canvasWidth * (item.imageScale / 100)) / img.width, 
-              canvasHeight * (item.imageScale / 100) / img.height
-            );
-            
-            const scaledWidth = img.width * scale;
-            const scaledHeight = img.height * scale;
-            const x = (canvasWidth - scaledWidth) / 2;
-            const y = (canvasHeight - scaledHeight) / 2;
-            
-            // Draw the centered, scaled item image
-            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-            
-            // Download the canvas as an image
-            finishDownload();
+            drawItemImage();
           };
           bgImg.src = background.backgroundImage;
         } else {
           // Fill with background color
           ctx.fillStyle = background.color;
           ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-          
-          // Calculate dimensions to center the item image on the background
-          // Use the item's imageScale property for scaling
-          const scale = Math.min(
-            (canvasWidth * (item.imageScale / 100)) / img.width, 
-            canvasHeight * (item.imageScale / 100) / img.height
-          );
-          
-          const scaledWidth = img.width * scale;
-          const scaledHeight = img.height * scale;
-          const x = (canvasWidth - scaledWidth) / 2;
-          const y = (canvasHeight - scaledHeight) / 2;
-          
-          // Draw the centered, scaled item image
-          ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-          
-          // Download the canvas as an image
-          finishDownload();
+          drawItemImage();
         }
       } else {
         // No background - fill with transparent/white background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        
-        // Calculate dimensions to center the item image
+        drawItemImage();
+      }
+      
+      function drawItemImage() {
+        // Calculate dimensions to center the item image on the background
         // Use the item's imageScale property for scaling
         const scale = Math.min(
           (canvasWidth * (item.imageScale / 100)) / img.width, 
@@ -929,9 +928,12 @@ const RarityBackgroundGenerator = () => {
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
         const x = (canvasWidth - scaledWidth) / 2;
-        const y = (canvasHeight - scaledHeight) / 2;
         
-        // Draw the centered, scaled item image
+        // Apply vertical offset - use individual item offset or global if enabled
+        const verticalOffset = useGlobalVerticalOffset ? globalVerticalOffset : (item.verticalOffset || 0);
+        const y = (canvasHeight - scaledHeight) / 2 + verticalOffset;
+        
+        // Draw the positioned and scaled item image
         ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
         
         // Download the canvas as an image
@@ -990,7 +992,8 @@ const RarityBackgroundGenerator = () => {
       Price: item.price,
       Background: item.background,
       DisableBackground: item.disableBackground ? 'Yes' : 'No',
-      ImageScale: item.imageScale
+      ImageScale: item.imageScale,
+      VerticalOffset: item.verticalOffset || 0
     }));
     
     const csv = Papa.unparse(csvData);
@@ -1050,6 +1053,57 @@ const RarityBackgroundGenerator = () => {
             </label>
           </div>
         </div>
+      </div>
+
+      {/* New Global Vertical Offset Section */}
+      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3">Vertical Positioning</h3>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="useGlobalVerticalOffset"
+              checked={useGlobalVerticalOffset}
+              onChange={() => setUseGlobalVerticalOffset(!useGlobalVerticalOffset)}
+              className="mr-2"
+            />
+            <label htmlFor="useGlobalVerticalOffset" className="text-sm font-medium">
+              Use Global Offset
+            </label>
+          </div>
+          
+          <div className="flex items-center">
+            <label htmlFor="globalVerticalOffset" className="text-sm mr-2">
+              Global Offset:
+            </label>
+            <input
+              type="range"
+              id="globalVerticalOffset"
+              min="-200"
+              max="200"
+              value={globalVerticalOffset}
+              onChange={(e) => setGlobalVerticalOffset(parseInt(e.target.value))}
+              className="w-32 mr-2"
+              disabled={!useGlobalVerticalOffset}
+            />
+            <span className="text-sm w-12">{globalVerticalOffset}px</span>
+            
+            <button
+              onClick={applyGlobalVerticalOffset}
+              disabled={!useGlobalVerticalOffset}
+              className={`ml-3 px-3 py-1 text-sm rounded ${
+                useGlobalVerticalOffset 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Apply to All
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 mt-2">
+          Negative values move images up, positive values move them down. Individual item offsets override global offset unless "Use Global Offset" is checked.
+        </p>
       </div>
 
       <div className="mb-6">
@@ -1153,6 +1207,7 @@ const RarityBackgroundGenerator = () => {
                 <th className="p-2 text-left">Price</th>
                 <th className="p-2 text-left">Image</th>
                 <th className="p-2 text-left">Scale %</th>
+                <th className="p-2 text-left">V-Offset</th>
                 <th className="p-2 text-left">Background</th>
                 <th className="p-2 text-left">Actions</th>
               </tr>
@@ -1224,7 +1279,11 @@ const RarityBackgroundGenerator = () => {
                             src={item.image} 
                             alt={`${item.name} thumbnail`}
                             className="max-w-full max-h-full object-contain"
-                            style={{ maxWidth: `${item.imageScale}%`, maxHeight: `${item.imageScale}%` }}
+                            style={{ 
+                              maxWidth: `${item.imageScale}%`, 
+                              maxHeight: `${item.imageScale}%`,
+                              transform: `translateY(${useGlobalVerticalOffset ? globalVerticalOffset * 0.1 : (item.verticalOffset || 0) * 0.1}px)`
+                            }}
                           />
                         </div>
                       )}
@@ -1239,6 +1298,19 @@ const RarityBackgroundGenerator = () => {
                       onChange={(e) => handleItemChange(index, 'imageScale', e.target.value)}
                       onBlur={handleBlur}
                       className="w-full p-1 border rounded"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      min="-200"
+                      max="200"
+                      value={item.verticalOffset || 0}
+                      onChange={(e) => handleItemChange(index, 'verticalOffset', e.target.value)}
+                      onBlur={handleBlur}
+                      className="w-full p-1 border rounded"
+                      disabled={useGlobalVerticalOffset}
+                      title="Vertical offset in pixels (negative = up, positive = down)"
                     />
                   </td>
                   <td className="p-2">
@@ -1330,7 +1402,11 @@ const RarityBackgroundGenerator = () => {
                     src={selectedItem.image} 
                     alt={`${selectedItem.name}`} 
                     className="max-w-full max-h-full object-contain"
-                    style={{ maxWidth: `${selectedItem.imageScale}%`, maxHeight: `${selectedItem.imageScale}%` }}
+                    style={{ 
+                      maxWidth: `${selectedItem.imageScale}%`, 
+                      maxHeight: `${selectedItem.imageScale}%`,
+                      transform: `translateY(${useGlobalVerticalOffset ? globalVerticalOffset * 0.3 : (selectedItem.verticalOffset || 0) * 0.3}px)`
+                    }}
                   />
                 </div>
               )}
@@ -1346,6 +1422,7 @@ const RarityBackgroundGenerator = () => {
           <li><strong>Name:</strong> The name of your item</li>
           <li><strong>ImageURL:</strong> A URL to the image (optional)</li>
           <li><strong>Price:</strong> The price/value of the item</li>
+          <li><strong>VerticalOffset:</strong> Vertical positioning offset in pixels (optional, negative = up, positive = down)</li>
         </ul>
         <p className="mb-2">When importing CSV data:</p>
         <ul className="list-disc pl-5">
@@ -1353,6 +1430,7 @@ const RarityBackgroundGenerator = () => {
           <li>Items with higher price values will get rarer backgrounds</li>
           <li>You can download a template CSV to see the correct format</li>
           <li>For best results with image URLs, use direct image links</li>
+          <li>Use the vertical offset feature to fine-tune image positioning</li>
         </ul>
       </div>
     </div>
